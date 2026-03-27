@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Microservices TP1</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #0d0d14;
+            color: #e8e8f0;
+            font-family: 'Space Mono', monospace;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .card {
+            background: #13131f;
+            border: 1px solid #2a2a3d;
+            border-radius: 16px;
+            padding: 32px;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        h1 { font-size: 20px; margin-bottom: 4px; }
+        h1 span { color: #7c6dfa; }
+        p  { font-size: 11px; color: #555; margin-bottom: 24px; }
+
+        .row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        input {
+            flex: 1;
+            background: #1c1c2e;
+            border: 1px solid #2a2a3d;
+            border-radius: 8px;
+            color: #e8e8f0;
+            font-family: 'Space Mono', monospace;
+            font-size: 16px;
+            padding: 12px 14px;
+            outline: none;
+            -moz-appearance: textfield;
+        }
+
+        input:focus { border-color: #7c6dfa; }
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+        button {
+            background: #7c6dfa;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            font-family: 'Space Mono', monospace;
+            font-size: 13px;
+            font-weight: 700;
+            padding: 12px 20px;
+            transition: opacity 0.2s;
+        }
+
+        button:hover { opacity: 0.85; }
+        button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .quick { display: flex; gap: 6px; margin-bottom: 20px; }
+
+        .q-btn {
+            background: #1c1c2e;
+            border: 1px solid #2a2a3d;
+            border-radius: 6px;
+            color: #888;
+            font-size: 11px;
+            padding: 5px 10px;
+        }
+
+        .q-btn:hover { border-color: #7c6dfa; color: #7c6dfa; opacity: 1; }
+
+        .status {
+            font-size: 12px;
+            color: #555;
+            min-height: 20px;
+            margin-bottom: 12px;
+        }
+
+        .status.ok  { color: #6dfabc; }
+        .status.err { color: #fa6d8f; }
+
+        pre {
+            background: #0a0a10;
+            border: 1px solid #2a2a3d;
+            border-radius: 8px;
+            color: #6dfabc;
+            font-size: 12px;
+            line-height: 1.7;
+            min-height: 80px;
+            overflow-x: auto;
+            padding: 16px;
+            white-space: pre;
+        }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h1>Service <span>Explorer</span></h1>
+    <p>TP1 · FastAPI Microservices</p>
+
+    <div class="row">
+        <input id="uid" type="number" value="1" min="1"
+               onkeydown="if(event.key==='Enter') go()">
+        <button id="btn" onclick="go()">Search</button>
+    </div>
+
+    <div class="quick">
+        <span style="font-size:11px;color:#555;align-self:center">Quick:</span>
+        <button class="q-btn" onclick="load(1)">User #1</button>
+        <button class="q-btn" onclick="load(2)">User #2</button>
+    </div>
+
+    <div class="status" id="status">En attente...</div>
+    <pre id="out">{ }</pre>
+</div>
+
+<script>
+    async function go() {
+        const id  = document.getElementById('uid').value;
+        const btn = document.getElementById('btn');
+        const st  = document.getElementById('status');
+        const out = document.getElementById('out');
+
+        btn.disabled = true;
+        st.className = 'status';
+        st.textContent = '⏳ Chargement...';
+        out.textContent = '...';
+
+        try {
+            const res  = await fetch(`http://localhost:8002/api/users/${id}`);
+            const data = await res.json();
+
+            if (data.error || !data.name) {
+                st.className = 'status err';
+                st.textContent = `⚠ ${data.error || 'Utilisateur introuvable'}`;
+                out.textContent = JSON.stringify(data, null, 2);
+            } else {
+                st.className = 'status ok';
+                st.textContent = `✓ ${data.name} · ${data.products?.length ?? 0} produit(s)`;
+                out.textContent = JSON.stringify(data, null, 2);
+            }
+        } catch {
+            st.className = 'status err';
+            st.textContent = '✗ Gateway inaccessible — vérifie les 3 services';
+            out.textContent = '{ }';
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    function load(id) {
+        document.getElementById('uid').value = id;
+        go();
+    }
+
+    go();
+</script>
+</body>
+</html>
